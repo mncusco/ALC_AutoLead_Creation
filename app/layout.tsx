@@ -1,3 +1,5 @@
+import { SpeedInsights } from '@vercel/speed-insights/next';
+
 export const metadata = {
   title: "ALC AutoLead Creation",
   description: "Multi-tenant content automation platform",
@@ -6,7 +8,10 @@ export const metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body>
+        {children}
+        <SpeedInsights />
+      </body>
     </html>
   );
 }
