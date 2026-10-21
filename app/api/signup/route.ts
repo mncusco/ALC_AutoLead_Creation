@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { sql } from "@/lib/db";
+import { STARTER_TEMPLATES } from "@/lib/starterTemplates";
 
 function slugify(name: string) {
   return name
@@ -38,6 +39,13 @@ export async function POST(req: Request) {
     INSERT INTO users (organization_id, email, password_hash, role)
     VALUES (${org.id}, ${email}, ${passwordHash}, 'owner')
   `;
+
+  for (const tpl of STARTER_TEMPLATES) {
+    await sql`
+      INSERT INTO content_templates (organization_id, name, label, language, prompt)
+      VALUES (${org.id}, ${tpl.name}, ${tpl.label}, ${tpl.language}, ${tpl.prompt})
+    `;
+  }
 
   return NextResponse.json({ ok: true });
 }

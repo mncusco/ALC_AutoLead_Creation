@@ -39,6 +39,7 @@ export default async function DashboardPage() {
   return (
     <main style={{ maxWidth: 960, margin: "2rem auto", fontFamily: "system-ui", padding: "0 1rem" }}>
       <h1>Dashboard — {organizationName}</h1>
+      <p><a href="/dashboard/articles">Articoli</a> · <a href="/dashboard/templates">Template</a> · <a href="/dashboard/settings">Impostazioni</a></p>
 
       {byPlatform.length === 0 ? (
         <p>Nessuna pubblicazione ancora registrata. I report compariranno qui non appena il motore di generazione/pubblicazione sarà collegato.</p>
