@@ -2,54 +2,58 @@
 
 import { useEffect, useState } from "react";
 import { AppNav } from "@/components/AppNav";
+import { INTEGRATIONS, INTEGRATION_ORDER } from "@/lib/integrations";
 
 export default function SettingsPage() {
-  const [url, setUrl] = useState("");
-  const [username, setUsername] = useState("");
-  const [appPassword, setAppPassword] = useState("");
-  const [wpMessage, setWpMessage] = useState<string | null>(null);
-  const [wpSaving, setWpSaving] = useState(false);
-
-  const [ghOwner, setGhOwner] = useState("");
-  const [ghRepo, setGhRepo] = useState("");
-  const [ghBranch, setGhBranch] = useState("main");
-  const [ghPostsPath, setGhPostsPath] = useState("posts");
-  const [ghToken, setGhToken] = useState("");
-  const [ghMessage, setGhMessage] = useState<string | null>(null);
-  const [ghSaving, setGhSaving] = useState(false);
+  const [connected, setConnected] = useState<string[]>([]);
+  const [openPlatform, setOpenPlatform] = useState<string | null>(null);
+  const [formValues, setFormValues] = useState<Record<string, string>>({});
+  const [saving, setSaving] = useState(false);
+  const [message, setMessage] = useState<string | null>(null);
 
   const [brandVoice, setBrandVoice] = useState("");
   const [bvMessage, setBvMessage] = useState<string | null>(null);
   const [bvSaving, setBvSaving] = useState(false);
 
+  async function loadConnected() {
+    const res = await fetch("/api/social-accounts");
+    const data = await res.json();
+    setConnected(data.connected || []);
+  }
+
   useEffect(() => {
+    loadConnected();
     fetch("/api/organization").then((r) => r.json()).then((d) => setBrandVoice(d.brandVoice || ""));
   }, []);
 
-  async function handleWpSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    setWpSaving(true);
-    setWpMessage(null);
-    const res = await fetch("/api/social-accounts/wordpress", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ url, username, appPassword }),
-    });
-    setWpSaving(false);
-    setWpMessage(res.ok ? "WordPress collegato." : "Errore nel salvataggio.");
+  function openForm(platform: string) {
+    setOpenPlatform(openPlatform === platform ? null : platform);
+    setFormValues({});
+    setMessage(null);
   }
 
-  async function handleGhSubmit(e: React.FormEvent) {
+  async function handleConnect(e: React.FormEvent, platform: string) {
     e.preventDefault();
-    setGhSaving(true);
-    setGhMessage(null);
-    const res = await fetch("/api/social-accounts/github", {
+    setSaving(true);
+    setMessage(null);
+    const res = await fetch("/api/social-accounts", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ owner: ghOwner, repo: ghRepo, branch: ghBranch, postsPath: ghPostsPath, token: ghToken }),
+      body: JSON.stringify({ platform, fields: formValues }),
     });
-    setGhSaving(false);
-    setGhMessage(res.ok ? "Blog GitHub collegato." : "Errore nel salvataggio.");
+    const data = await res.json();
+    setSaving(false);
+    if (!res.ok) {
+      setMessage(`Errore: ${data.error}`);
+      return;
+    }
+    setOpenPlatform(null);
+    loadConnected();
+  }
+
+  async function handleDisconnect(platform: string) {
+    await fetch(`/api/social-accounts/${platform}`, { method: "DELETE" });
+    loadConnected();
   }
 
   async function handleBvSubmit(e: React.FormEvent) {
@@ -74,57 +78,64 @@ export default function SettingsPage() {
         <div className="card">
           <h2 style={{ marginTop: 0 }}>La tua voce</h2>
           <p style={{ fontSize: 14, color: "var(--ink-dim)" }}>
-            Incolla qui alcuni post reali (LinkedIn, Facebook, Instagram) o testi che rappresentano come scrivi di solito.
-            Il generatore li userà come riferimento di tono e stile. Il collegamento diretto ai social per leggerli
-            automaticamente non è ancora attivo — richiede l&apos;approvazione delle rispettive piattaforme.
+            Incolla alcuni post reali (LinkedIn, Facebook, Instagram) o testi rappresentativi del tuo stile:
+            il generatore li userà come riferimento di tono.
           </p>
           <form onSubmit={handleBvSubmit} style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-            <textarea
-              placeholder="Incolla qui 2-3 tuoi post o testi rappresentativi del tuo stile..."
-              value={brandVoice}
-              onChange={(e) => setBrandVoice(e.target.value)}
-              rows={6}
-            />
+            <textarea value={brandVoice} onChange={(e) => setBrandVoice(e.target.value)} rows={6} />
             <button type="submit" className="btn btn-primary" disabled={bvSaving}>{bvSaving ? "..." : "Salva"}</button>
           </form>
           {bvMessage && <p style={{ fontSize: 14, marginTop: 10 }}>{bvMessage}</p>}
         </div>
 
-        <h2>Collega WordPress</h2>
-        <div className="card">
-          <p style={{ fontSize: 14, color: "var(--ink-dim)", marginTop: 0 }}>
-            Serve una Application Password WordPress (Utenti → Profilo → Application Passwords).
-          </p>
-          <form onSubmit={handleWpSubmit} style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-            <input placeholder="URL sito (es. https://tuosito.com)" value={url} onChange={(e) => setUrl(e.target.value)} required />
-            <input placeholder="Username WordPress" value={username} onChange={(e) => setUsername(e.target.value)} required />
-            <input type="password" placeholder="Application Password" value={appPassword} onChange={(e) => setAppPassword(e.target.value)} required />
-            <button type="submit" className="btn btn-primary" disabled={wpSaving}>{wpSaving ? "..." : "Salva"}</button>
-          </form>
-          {wpMessage && <p style={{ fontSize: 14, marginTop: 10 }}>{wpMessage}</p>}
-        </div>
+        <h2>Piattaforme collegate</h2>
+        <div className="card" style={{ padding: 0 }}>
+          {INTEGRATION_ORDER.map((key, i) => {
+            const def = INTEGRATIONS[key];
+            const isConnected = connected.includes(key);
+            const isOpen = openPlatform === key;
+            return (
+              <div key={key} style={{ borderTop: i === 0 ? "none" : "1px solid var(--line)", padding: "18px 24px" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <div>
+                    <strong>{def.label}</strong>
+                    {!def.publishSupported && (
+                      <span style={{ fontSize: 12, color: "var(--gold)", marginLeft: 8 }}>pubblicazione non ancora attiva</span>
+                    )}
+                    {isConnected && <span className="status-pill success" style={{ marginLeft: 10 }}>collegato</span>}
+                  </div>
+                  <div style={{ display: "flex", gap: 8 }}>
+                    {isConnected && (
+                      <button onClick={() => handleDisconnect(key)} style={{ fontSize: 13 }}>Scollega</button>
+                    )}
+                    <button onClick={() => openForm(key)} style={{ fontSize: 13 }}>
+                      {isConnected ? "Aggiorna" : "Collega"}
+                    </button>
+                  </div>
+                </div>
 
-        <h2>Collega blog su GitHub Pages</h2>
-        <div className="card">
-          <p style={{ fontSize: 14, color: "var(--ink-dim)", marginTop: 0 }}>
-            Ogni articolo pubblicato crea una nuova pagina nella cartella indicata, senza toccare il resto del sito.
-            Serve un Personal Access Token GitHub con permesso "Contents: Read and write" sul repo.
-          </p>
-          <form onSubmit={handleGhSubmit} style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-            <input placeholder="Owner (es. mncusco)" value={ghOwner} onChange={(e) => setGhOwner(e.target.value)} required />
-            <input placeholder="Repo (es. Blog)" value={ghRepo} onChange={(e) => setGhRepo(e.target.value)} required />
-            <input placeholder="Branch" value={ghBranch} onChange={(e) => setGhBranch(e.target.value)} />
-            <input placeholder="Cartella articoli (es. posts)" value={ghPostsPath} onChange={(e) => setGhPostsPath(e.target.value)} />
-            <input type="password" placeholder="GitHub Personal Access Token" value={ghToken} onChange={(e) => setGhToken(e.target.value)} required />
-            <button type="submit" className="btn btn-primary" disabled={ghSaving}>{ghSaving ? "..." : "Salva"}</button>
-          </form>
-          {ghMessage && <p style={{ fontSize: 14, marginTop: 10 }}>{ghMessage}</p>}
+                {isOpen && (
+                  <form onSubmit={(e) => handleConnect(e, key)} style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 14 }}>
+                    <p style={{ fontSize: 13, color: "var(--ink-dim)", margin: 0 }}>{def.help}</p>
+                    {def.limitation && <p style={{ fontSize: 13, color: "var(--gold)", margin: 0 }}>{def.limitation}</p>}
+                    {def.fields.map((f) => (
+                      <input
+                        key={f.key}
+                        type={f.type}
+                        placeholder={f.placeholder || f.label}
+                        value={formValues[f.key] || ""}
+                        onChange={(e) => setFormValues({ ...formValues, [f.key]: e.target.value })}
+                        required
+                      />
+                    ))}
+                    <button type="submit" className="btn btn-primary" disabled={saving}>{saving ? "..." : "Salva"}</button>
+                  </form>
+                )}
+              </div>
+            );
+          })}
         </div>
-
-        <h2>LinkedIn / Facebook / Instagram / X</h2>
-        <p className="empty-note">
-          In arrivo — richiedono il collegamento OAuth con ciascuna piattaforma (serve approvazione app).
-        </p>
+        {message && <p style={{ fontSize: 14, marginTop: 10 }}>{message}</p>}
       </main>
     </>
   );

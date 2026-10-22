@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { AppNav } from "@/components/AppNav";
 import { generateCoverArt } from "@/lib/coverArt";
+import { INTEGRATIONS } from "@/lib/integrations";
 
 type Template = { id: string; name: string; label: string; language: string };
 type ArticleContent = {
@@ -43,6 +44,7 @@ export default function ArticlesPage() {
   const [templateId, setTemplateId] = useState("");
   const [instructions, setInstructions] = useState("");
   const [articles, setArticles] = useState<Article[]>([]);
+  const [connected, setConnected] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [listLoading, setListLoading] = useState(true);
   const [publishing, setPublishing] = useState<string | null>(null);
@@ -66,9 +68,16 @@ export default function ArticlesPage() {
     setListLoading(false);
   }
 
+  async function loadConnected() {
+    const res = await fetch("/api/social-accounts");
+    const data = await res.json();
+    setConnected(data.connected || []);
+  }
+
   useEffect(() => {
     loadTemplates();
     loadArticles();
+    loadConnected();
   }, []);
 
   async function handleGenerate(e: React.FormEvent) {
@@ -88,16 +97,15 @@ export default function ArticlesPage() {
     }
     await loadArticles();
     setExpanded(data.article.id);
-    setMessage(null);
   }
 
-  async function handlePublish(articleId: string, platform: "wordpress" | "github") {
+  async function handlePublish(articleId: string, platform: string) {
     setPublishing(articleId + platform);
     setMessage(null);
     const res = await fetch(`/api/articles/${articleId}/publish/${platform}`, { method: "POST" });
     const data = await res.json();
     setPublishing(null);
-    const label = platform === "wordpress" ? "WordPress" : "GitHub";
+    const label = INTEGRATIONS[platform]?.label || platform;
     setMessage(data.ok ? `Pubblicato su ${label}: ${data.message}` : `Errore pubblicazione ${label}: ${data.error || data.message}`);
     loadArticles();
   }
@@ -143,8 +151,13 @@ export default function ArticlesPage() {
               {loading ? "Generazione in corso..." : "Genera articolo"}
             </button>
           </form>
-          {message && <p style={{ marginTop: 12, fontSize: 14 }}>{message}</p>}
         </div>
+
+        {connected.length === 0 && (
+          <p className="empty-note" style={{ marginTop: 16 }}>
+            Nessuna piattaforma collegata — vai in <a href="/dashboard/settings">Impostazioni</a> per collegarne una, oppure usa &quot;Copia testo&quot; per ora.
+          </p>
+        )}
 
         <h2>Articoli generati</h2>
 
@@ -177,12 +190,11 @@ export default function ArticlesPage() {
                   {content && (
                     <button onClick={() => handleCopy(a, content)}>{copiedId === a.id ? "Copiato ✓" : "Copia testo"}</button>
                   )}
-                  <button onClick={() => handlePublish(a.id, "wordpress")} disabled={publishing === a.id + "wordpress"}>
-                    {publishing === a.id + "wordpress" ? "..." : "Pubblica su WordPress"}
-                  </button>
-                  <button onClick={() => handlePublish(a.id, "github")} disabled={publishing === a.id + "github"}>
-                    {publishing === a.id + "github" ? "..." : "Pubblica su GitHub"}
-                  </button>
+                  {connected.map((platform) => (
+                    <button key={platform} onClick={() => handlePublish(a.id, platform)} disabled={publishing === a.id + platform}>
+                      {publishing === a.id + platform ? "..." : `Pubblica su ${INTEGRATIONS[platform]?.label || platform}`}
+                    </button>
+                  ))}
                   <button onClick={() => handleDelete(a.id)} disabled={deleting === a.id} style={{ color: "#e08a8a" }}>
                     {deleting === a.id ? "..." : "Elimina"}
                   </button>
@@ -207,6 +219,8 @@ export default function ArticlesPage() {
             </div>
           );
         })}
+
+        {message && <p style={{ marginTop: 16, fontSize: 14 }}>{message}</p>}
       </main>
     </>
   );
