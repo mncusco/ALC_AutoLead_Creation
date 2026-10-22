@@ -196,3 +196,152 @@ footer {
   .features .item:first-child { border-top: none; padding-top: 0; }
   .nav-links { gap: 12px; }
 }
+
+/* --- App (auth + dashboard) --- */
+
+input, textarea, select {
+  background: var(--bg-alt);
+  border: 1px solid var(--line);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 15px;
+  padding: 10px 12px;
+  border-radius: 3px;
+  outline: none;
+}
+input:focus, textarea:focus, select:focus { border-color: var(--gold); }
+button { font-family: var(--font-body); cursor: pointer; }
+button:disabled { opacity: 0.6; cursor: default; }
+
+.btn-block { width: 100%; text-align: center; border: none; }
+
+.auth-wrap {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.auth-card {
+  width: 100%;
+  max-width: 380px;
+  padding: 40px 36px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+}
+.auth-card h1 {
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: 26px;
+  margin: 0 0 24px;
+}
+.auth-card form { display: flex; flex-direction: column; gap: 12px; }
+.auth-card .error { color: #e08a8a; font-size: 14px; margin: 4px 0 0; }
+.auth-card .switch { font-size: 14px; color: var(--ink-dim); margin-top: 20px; }
+.auth-card .switch a { color: var(--gold); }
+
+.app-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 32px;
+  border-bottom: 1px solid var(--line);
+}
+.app-nav .wordmark { font-family: var(--font-display); font-size: 18px; }
+.app-nav .links { display: flex; gap: 24px; font-size: 14px; align-items: center; }
+.app-nav .links a { color: var(--ink-dim); }
+.app-nav .links a.active { color: var(--ink); }
+.app-nav .signout { background: none; border: none; color: var(--ink-dim); font-size: 14px; padding: 0; }
+
+.app-main {
+  max-width: 880px;
+  margin: 0 auto;
+  padding: 40px 24px 80px;
+}
+.app-main h1 {
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: 28px;
+  margin: 0 0 28px;
+}
+.app-main h2 {
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: 19px;
+  margin: 36px 0 16px;
+}
+
+.card {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 24px;
+}
+
+.article-card {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 20px 22px;
+  margin-bottom: 14px;
+}
+.article-card .head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.article-card .title {
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 500;
+  margin: 0;
+}
+.article-card .meta { font-size: 13px; color: var(--ink-dim); margin-top: 4px; }
+.article-card .actions { display: flex; gap: 10px; flex-shrink: 0; }
+.article-card .actions button, .article-card .actions a {
+  background: var(--bg-alt);
+  border: 1px solid var(--line);
+  color: var(--ink);
+  font-size: 13px;
+  padding: 7px 14px;
+  border-radius: 3px;
+  text-decoration: none;
+}
+.article-card .body {
+  margin-top: 18px;
+  padding-top: 18px;
+  border-top: 1px solid var(--line);
+  font-size: 15px;
+  line-height: 1.65;
+  color: var(--ink-dim);
+}
+.article-card .body h3 {
+  font-family: var(--font-display);
+  color: var(--ink);
+  font-size: 16px;
+  margin: 16px 0 6px;
+}
+.article-card .hashtags { margin-top: 14px; font-size: 13px; color: var(--gold); }
+.status-pill {
+  display: inline-block;
+  font-size: 12px;
+  padding: 3px 10px;
+  border-radius: 20px;
+  border: 1px solid var(--line);
+}
+.status-pill.success { color: #8fd4a8; border-color: #8fd4a8; }
+.status-pill.failed { color: #e08a8a; border-color: #e08a8a; }
+
+.empty-note {
+  color: var(--ink-dim);
+  font-size: 14px;
+  padding: 24px;
+  border: 1px dashed var(--line);
+  border-radius: 6px;
+}
+
+table { width: 100%; border-collapse: collapse; font-size: 14px; }
+th, td { text-align: left; padding: 10px 8px; border-bottom: 1px solid var(--line); }
+th { color: var(--ink-dim); font-weight: 500; font-size: 13px; }

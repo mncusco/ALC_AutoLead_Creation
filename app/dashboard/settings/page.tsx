@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { AppNav } from "@/components/AppNav";
 
 export default function SettingsPage() {
   const [url, setUrl] = useState("");
@@ -23,26 +24,30 @@ export default function SettingsPage() {
   }
 
   return (
-    <main style={{ maxWidth: 480, margin: "2rem auto", fontFamily: "system-ui", padding: "0 1rem" }}>
-      <h1>Impostazioni</h1>
-      <p><a href="/dashboard">← Dashboard</a></p>
+    <>
+      <AppNav />
+      <main className="app-main" style={{ maxWidth: 520 }}>
+        <h1>Impostazioni</h1>
 
-      <h2>Collega WordPress</h2>
-      <p style={{ fontSize: 14, color: "#555" }}>
-        Serve una Application Password WordPress (Utenti → Profilo → Application Passwords).
-      </p>
-      <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-        <input placeholder="URL sito (es. https://tuosito.com)" value={url} onChange={(e) => setUrl(e.target.value)} required />
-        <input placeholder="Username WordPress" value={username} onChange={(e) => setUsername(e.target.value)} required />
-        <input type="password" placeholder="Application Password" value={appPassword} onChange={(e) => setAppPassword(e.target.value)} required />
-        <button type="submit" disabled={saving}>{saving ? "..." : "Salva"}</button>
-      </form>
-      {message && <p>{message}</p>}
+        <div className="card">
+          <h2 style={{ marginTop: 0 }}>Collega WordPress</h2>
+          <p style={{ fontSize: 14, color: "var(--ink-dim)" }}>
+            Serve una Application Password WordPress (Utenti → Profilo → Application Passwords). Senza questo collegamento puoi comunque generare articoli e copiarne il testo.
+          </p>
+          <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            <input placeholder="URL sito (es. https://tuosito.com)" value={url} onChange={(e) => setUrl(e.target.value)} required />
+            <input placeholder="Username WordPress" value={username} onChange={(e) => setUsername(e.target.value)} required />
+            <input type="password" placeholder="Application Password" value={appPassword} onChange={(e) => setAppPassword(e.target.value)} required />
+            <button type="submit" className="btn btn-primary" disabled={saving}>{saving ? "..." : "Salva"}</button>
+          </form>
+          {message && <p style={{ fontSize: 14, marginTop: 10 }}>{message}</p>}
+        </div>
 
-      <h2 style={{ marginTop: 32 }}>LinkedIn / Facebook / Instagram</h2>
-      <p style={{ fontSize: 14, color: "#555" }}>
-        In arrivo — richiedono il collegamento OAuth con ciascuna piattaforma (serve approvazione app da parte di Meta/LinkedIn).
-      </p>
-    </main>
+        <h2>LinkedIn / Facebook / Instagram</h2>
+        <p className="empty-note">
+          In arrivo — richiedono il collegamento OAuth con ciascuna piattaforma (serve approvazione app da parte di Meta/LinkedIn).
+        </p>
+      </main>
+    </>
   );
 }

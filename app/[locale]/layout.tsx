@@ -1,4 +1,3 @@
-import "../globals.css";
 import { dictionary, LOCALES, type Locale } from "@/lib/i18n/dictionary";
 
 export function generateStaticParams() {

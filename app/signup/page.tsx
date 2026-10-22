@@ -40,16 +40,18 @@ export default function SignupPage() {
   }
 
   return (
-    <main style={{ maxWidth: 360, margin: "4rem auto", fontFamily: "system-ui" }}>
-      <h1>Crea il tuo account</h1>
-      <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-        <input placeholder="Nome azienda" value={organizationName} onChange={(e) => setOrganizationName(e.target.value)} required />
-        <input type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} required />
-        <input type="password" placeholder="Password (min 8 caratteri)" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={8} />
-        {error && <p style={{ color: "crimson" }}>{error}</p>}
-        <button type="submit" disabled={loading}>{loading ? "..." : "Registrati"}</button>
-      </form>
-      <p>Hai già un account? <a href="/login">Accedi</a></p>
-    </main>
+    <div className="auth-wrap">
+      <div className="auth-card">
+        <h1>Crea il tuo account</h1>
+        <form onSubmit={handleSubmit}>
+          <input placeholder="Nome azienda" value={organizationName} onChange={(e) => setOrganizationName(e.target.value)} required />
+          <input type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+          <input type="password" placeholder="Password (min 8 caratteri)" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={8} />
+          {error && <p className="error">{error}</p>}
+          <button type="submit" className="btn btn-primary btn-block" disabled={loading}>{loading ? "..." : "Registrati"}</button>
+        </form>
+        <p className="switch">Hai già un account? <a href="/login">Accedi</a></p>
+      </div>
+    </div>
   );
 }

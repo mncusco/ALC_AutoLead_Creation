@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { authOptions } from "@/lib/auth";
 import { sql } from "@/lib/db";
 import { PublishCharts } from "@/components/PublishCharts";
+import { AppNav } from "@/components/AppNav";
 
 export default async function DashboardPage() {
   const session = await getServerSession(authOptions);
@@ -36,38 +37,54 @@ export default async function DashboardPage() {
     LIMIT 10
   `;
 
+  const [articleCount] = await sql`
+    SELECT COUNT(*)::int AS count FROM articles WHERE organization_id = ${organizationId}
+  `;
+
   return (
-    <main style={{ maxWidth: 960, margin: "2rem auto", fontFamily: "system-ui", padding: "0 1rem" }}>
-      <h1>Dashboard — {organizationName}</h1>
-      <p><a href="/dashboard/articles">Articoli</a> · <a href="/dashboard/templates">Template</a> · <a href="/dashboard/settings">Impostazioni</a></p>
+    <>
+      <AppNav />
+      <main className="app-main">
+        <h1>Dashboard — {organizationName}</h1>
 
-      {byPlatform.length === 0 ? (
-        <p>Nessuna pubblicazione ancora registrata. I report compariranno qui non appena il motore di generazione/pubblicazione sarà collegato.</p>
-      ) : (
-        <PublishCharts byPlatform={byPlatform as any} byStatus={byStatus as any} />
-      )}
+        {byPlatform.length === 0 ? (
+          <div className="empty-note">
+            {articleCount.count > 0
+              ? "Hai articoli generati ma nessuna pubblicazione registrata ancora. Vai in Articoli per pubblicarne uno."
+              : "Nessun articolo generato ancora. Vai in Articoli per crearne uno."}
+          </div>
+        ) : (
+          <div className="card">
+            <PublishCharts byPlatform={byPlatform as any} byStatus={byStatus as any} />
+          </div>
+        )}
 
-      <h2 style={{ marginTop: 32 }}>Ultime pubblicazioni</h2>
-      <table style={{ width: "100%", borderCollapse: "collapse" }}>
-        <thead>
-          <tr>
-            <th style={{ textAlign: "left", borderBottom: "1px solid #ccc" }}>Articolo</th>
-            <th style={{ textAlign: "left", borderBottom: "1px solid #ccc" }}>Piattaforma</th>
-            <th style={{ textAlign: "left", borderBottom: "1px solid #ccc" }}>Stato</th>
-            <th style={{ textAlign: "left", borderBottom: "1px solid #ccc" }}>Data</th>
-          </tr>
-        </thead>
-        <tbody>
-          {recent.map((r: any, i: number) => (
-            <tr key={i}>
-              <td>{r.title}</td>
-              <td>{r.platform}</td>
-              <td>{r.status}</td>
-              <td>{r.published_at ? new Date(r.published_at).toLocaleString() : "-"}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </main>
+        <h2>Ultime pubblicazioni</h2>
+        {recent.length === 0 ? (
+          <p className="empty-note">Compariranno qui non appena pubblichi un articolo.</p>
+        ) : (
+          <table>
+            <thead>
+              <tr>
+                <th>Articolo</th>
+                <th>Piattaforma</th>
+                <th>Stato</th>
+                <th>Data</th>
+              </tr>
+            </thead>
+            <tbody>
+              {recent.map((r: any, i: number) => (
+                <tr key={i}>
+                  <td>{r.title}</td>
+                  <td>{r.platform}</td>
+                  <td><span className={`status-pill ${r.status}`}>{r.status}</span></td>
+                  <td>{r.published_at ? new Date(r.published_at).toLocaleString() : "-"}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </main>
+    </>
   );
 }

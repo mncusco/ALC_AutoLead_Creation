@@ -25,15 +25,17 @@ export default function LoginPage() {
   }
 
   return (
-    <main style={{ maxWidth: 360, margin: "4rem auto", fontFamily: "system-ui" }}>
-      <h1>Accedi</h1>
-      <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-        <input type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} required />
-        <input type="password" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} required />
-        {error && <p style={{ color: "crimson" }}>{error}</p>}
-        <button type="submit" disabled={loading}>{loading ? "..." : "Accedi"}</button>
-      </form>
-      <p>Non hai un account? <a href="/signup">Registrati</a></p>
-    </main>
+    <div className="auth-wrap">
+      <div className="auth-card">
+        <h1>Accedi</h1>
+        <form onSubmit={handleSubmit}>
+          <input type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+          <input type="password" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} required />
+          {error && <p className="error">{error}</p>}
+          <button type="submit" className="btn btn-primary btn-block" disabled={loading}>{loading ? "..." : "Accedi"}</button>
+        </form>
+        <p className="switch">Non hai un account? <a href="/signup">Registrati</a></p>
+      </div>
+    </div>
   );
 }
