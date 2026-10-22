@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { AppNav } from "@/components/AppNav";
+import { generateCoverArt } from "@/lib/coverArt";
 
 type Template = { id: string; name: string; label: string; language: string };
 type ArticleContent = {
@@ -45,6 +46,7 @@ export default function ArticlesPage() {
   const [loading, setLoading] = useState(false);
   const [listLoading, setListLoading] = useState(true);
   const [publishing, setPublishing] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState<string | null>(null);
   const [expanded, setExpanded] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
@@ -89,14 +91,27 @@ export default function ArticlesPage() {
     setMessage(null);
   }
 
-  async function handlePublish(articleId: string) {
-    setPublishing(articleId);
+  async function handlePublish(articleId: string, platform: "wordpress" | "github") {
+    setPublishing(articleId + platform);
     setMessage(null);
-    const res = await fetch(`/api/articles/${articleId}/publish/wordpress`, { method: "POST" });
+    const res = await fetch(`/api/articles/${articleId}/publish/${platform}`, { method: "POST" });
     const data = await res.json();
     setPublishing(null);
-    setMessage(data.ok ? `Pubblicato su WordPress: ${data.message}` : `Errore pubblicazione: ${data.error || data.message}`);
+    const label = platform === "wordpress" ? "WordPress" : "GitHub";
+    setMessage(data.ok ? `Pubblicato su ${label}: ${data.message}` : `Errore pubblicazione ${label}: ${data.error || data.message}`);
     loadArticles();
+  }
+
+  async function handleDelete(articleId: string) {
+    if (!confirm("Eliminare questo articolo? L'azione non è reversibile.")) return;
+    setDeleting(articleId);
+    const res = await fetch(`/api/articles/${articleId}`, { method: "DELETE" });
+    setDeleting(null);
+    if (res.ok) {
+      setArticles((prev) => prev.filter((a) => a.id !== articleId));
+    } else {
+      setMessage("Errore durante l'eliminazione.");
+    }
   }
 
   async function handleCopy(article: Article, content: ArticleContent) {
@@ -143,6 +158,10 @@ export default function ArticlesPage() {
           const isOpen = expanded === a.id;
           return (
             <div className="article-card" key={a.id}>
+              <div
+                style={{ width: "100%", height: 90, borderRadius: 4, overflow: "hidden", marginBottom: 14 }}
+                dangerouslySetInnerHTML={{ __html: generateCoverArt(a.title) }}
+              />
               <div className="head">
                 <div>
                   <p className="title">{a.title}</p>
@@ -158,8 +177,14 @@ export default function ArticlesPage() {
                   {content && (
                     <button onClick={() => handleCopy(a, content)}>{copiedId === a.id ? "Copiato ✓" : "Copia testo"}</button>
                   )}
-                  <button onClick={() => handlePublish(a.id)} disabled={publishing === a.id}>
-                    {publishing === a.id ? "..." : "Pubblica su WordPress"}
+                  <button onClick={() => handlePublish(a.id, "wordpress")} disabled={publishing === a.id + "wordpress"}>
+                    {publishing === a.id + "wordpress" ? "..." : "Pubblica su WordPress"}
+                  </button>
+                  <button onClick={() => handlePublish(a.id, "github")} disabled={publishing === a.id + "github"}>
+                    {publishing === a.id + "github" ? "..." : "Pubblica su GitHub"}
+                  </button>
+                  <button onClick={() => handleDelete(a.id)} disabled={deleting === a.id} style={{ color: "#e08a8a" }}>
+                    {deleting === a.id ? "..." : "Elimina"}
                   </button>
                 </div>
               </div>

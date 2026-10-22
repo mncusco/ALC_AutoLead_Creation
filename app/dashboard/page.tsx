@@ -41,11 +41,28 @@ export default async function DashboardPage() {
     SELECT COUNT(*)::int AS count FROM articles WHERE organization_id = ${organizationId}
   `;
 
+  const [publishedCount] = await sql`
+    SELECT COUNT(DISTINCT article_id)::int AS count
+    FROM publish_events
+    WHERE organization_id = ${organizationId} AND status = 'success'
+  `;
+
   return (
     <>
       <AppNav />
       <main className="app-main">
         <h1>Dashboard — {organizationName}</h1>
+
+        <div style={{ display: "flex", gap: 16, marginBottom: 28 }}>
+          <div className="card" style={{ flex: 1 }}>
+            <p style={{ fontSize: 13, color: "var(--ink-dim)", margin: "0 0 6px" }}>Pubblicati</p>
+            <p style={{ fontFamily: "var(--font-display)", fontSize: 30, margin: 0 }}>{publishedCount.count}</p>
+          </div>
+          <div className="card" style={{ flex: 1 }}>
+            <p style={{ fontSize: 13, color: "var(--ink-dim)", margin: "0 0 6px" }}>Generati (bozza inclusa)</p>
+            <p style={{ fontFamily: "var(--font-display)", fontSize: 30, margin: 0, color: "var(--ink-dim)" }}>{articleCount.count}</p>
+          </div>
+        </div>
 
         {byPlatform.length === 0 ? (
           <div className="empty-note">

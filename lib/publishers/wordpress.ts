@@ -1,5 +1,7 @@
 // Porting di publishers/wordpress.py
 
+import { generateCoverArt } from "@/lib/coverArt";
+
 type WpConfig = { url: string; username: string; appPassword: string; defaultStatus?: string };
 
 function apiBase(cfg: WpConfig) {
@@ -17,7 +19,8 @@ export async function publishToWordPress(
   cfg: WpConfig,
   article: { title: string; lead: string; sections: { heading: string; body: string }[]; cta: string; hashtags: string[] }
 ): Promise<{ ok: boolean; message: string }> {
-  const bodyParts = [`<p>${article.lead || ""}</p>`];
+  const cover = generateCoverArt(article.title);
+  const bodyParts = [cover, `<p>${article.lead || ""}</p>`];
   for (const sec of article.sections || []) {
     bodyParts.push(`<h2>${sec.heading || ""}</h2>`);
     bodyParts.push(`<p>${sec.body || ""}</p>`);

@@ -21,6 +21,7 @@ export async function generateArticle(opts: {
   template: { name: string; prompt: string; language: string };
   tone?: string;
   instructions?: string;
+  brandVoice?: string;
 }) {
   const key = process.env.GROQ_API_KEY;
   if (!key) throw new Error("GROQ_API_KEY non impostata");
@@ -33,6 +34,12 @@ export async function generateArticle(opts: {
     .replaceAll("{language}", language)
     .replaceAll("{tone}", tone)
     .replaceAll("{instructions}", opts.instructions || "Nessuna istruzione speciale.");
+
+  if (opts.brandVoice && opts.brandVoice.trim()) {
+    prompt +=
+      `\n\nScrivi imitando lo stile e il tono dei seguenti esempi reali tratti dai social di questa attività ` +
+      `(stessa voce, stesso registro, stesse espressioni ricorrenti se coerenti col contesto):\n"""\n${opts.brandVoice.trim()}\n"""`;
+  }
 
   prompt +=
     '\n\nRispondi STRETTAMENTE in formato JSON con questa struttura (nessun testo prima o dopo):\n' +

@@ -18,11 +18,14 @@ export async function POST(req: Request) {
   `;
   if (!template) return NextResponse.json({ error: "Template non trovato" }, { status: 404 });
 
+  const [org] = await sql`SELECT brand_voice FROM organizations WHERE id = ${organizationId}`;
+
   let generated;
   try {
     generated = await generateArticle({
       template: { name: template.name, prompt: template.prompt, language: template.language },
       instructions,
+      brandVoice: org?.brand_voice || undefined,
     });
   } catch (e: any) {
     return NextResponse.json({ error: e.message || "Errore di generazione" }, { status: 502 });
