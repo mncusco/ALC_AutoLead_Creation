@@ -14,6 +14,8 @@ export default function SettingsPage() {
   const [brandVoice, setBrandVoice] = useState("");
   const [bvMessage, setBvMessage] = useState<string | null>(null);
   const [bvSaving, setBvSaving] = useState(false);
+  const [websiteUrl, setWebsiteUrl] = useState("");
+  const [analyzing, setAnalyzing] = useState<"website" | "facebook" | null>(null);
 
   async function loadConnected() {
     const res = await fetch("/api/social-accounts");
@@ -56,6 +58,24 @@ export default function SettingsPage() {
     loadConnected();
   }
 
+  async function handleAnalyze(source: "website" | "facebook") {
+    setAnalyzing(source);
+    setBvMessage(null);
+    const res = await fetch("/api/organization/analyze-voice", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ source, url: websiteUrl }),
+    });
+    const data = await res.json();
+    setAnalyzing(null);
+    if (!res.ok) {
+      setBvMessage(`Errore: ${data.error}`);
+      return;
+    }
+    setBrandVoice(data.brandVoice);
+    setBvMessage("Analisi completata — rivedi il testo qui sotto e premi Salva per confermarlo.");
+  }
+
   async function handleBvSubmit(e: React.FormEvent) {
     e.preventDefault();
     setBvSaving(true);
@@ -78,8 +98,35 @@ export default function SettingsPage() {
         <div className="card">
           <h2 style={{ marginTop: 0 }}>La tua voce</h2>
           <p style={{ fontSize: 14, color: "var(--ink-dim)" }}>
-            Incolla alcuni post reali (LinkedIn, Facebook, Instagram) o testi rappresentativi del tuo stile:
-            il generatore li userà come riferimento di tono.
+            Analisi automatica: il sistema legge il tuo sito (o i tuoi ultimi post Facebook, se collegato) e ne descrive
+            lo stile da solo — non serve copiare e incollare nulla. Rivedi sempre il risultato prima di salvarlo.
+          </p>
+
+          <div style={{ display: "flex", gap: 8, marginBottom: 14 }}>
+            <input
+              placeholder="https://www.tuosito.com"
+              value={websiteUrl}
+              onChange={(e) => setWebsiteUrl(e.target.value)}
+              style={{ flex: 1 }}
+            />
+            <button type="button" onClick={() => handleAnalyze("website")} disabled={!websiteUrl || analyzing !== null}>
+              {analyzing === "website" ? "Analisi..." : "Analizza dal sito"}
+            </button>
+          </div>
+
+          {connected.includes("facebook") && (
+            <button
+              type="button"
+              onClick={() => handleAnalyze("facebook")}
+              disabled={analyzing !== null}
+              style={{ marginBottom: 14 }}
+            >
+              {analyzing === "facebook" ? "Analisi..." : "Analizza dagli ultimi post Facebook collegati"}
+            </button>
+          )}
+
+          <p style={{ fontSize: 13, color: "var(--ink-dim)" }}>
+            Oppure scrivi/incolla tu stesso una descrizione dello stile o alcuni post reali:
           </p>
           <form onSubmit={handleBvSubmit} style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             <textarea value={brandVoice} onChange={(e) => setBrandVoice(e.target.value)} rows={6} />
