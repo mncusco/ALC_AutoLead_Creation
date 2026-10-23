@@ -3,6 +3,7 @@
 import { generateCoverArt } from "@/lib/coverArt";
 
 type WpConfig = { url: string; username: string; appPassword: string; defaultStatus?: string };
+type ArticleWithImage = { imageUrl?: string | null };
 
 function apiBase(cfg: WpConfig) {
   const url = cfg.url.replace(/\/$/, "");
@@ -17,9 +18,11 @@ function authHeader(cfg: WpConfig) {
 
 export async function publishToWordPress(
   cfg: WpConfig,
-  article: { title: string; lead: string; sections: { heading: string; body: string }[]; cta: string; hashtags: string[] }
+  article: { title: string; lead: string; sections: { heading: string; body: string }[]; cta: string; hashtags: string[] } & ArticleWithImage
 ): Promise<{ ok: boolean; message: string }> {
-  const cover = generateCoverArt(article.title);
+  const cover = article.imageUrl
+    ? `<img src="${article.imageUrl}" alt="${article.title}" style="width:100%;height:auto;border-radius:6px;" />`
+    : generateCoverArt(article.title);
   const bodyParts = [cover, `<p>${article.lead || ""}</p>`];
   for (const sec of article.sections || []) {
     bodyParts.push(`<h2>${sec.heading || ""}</h2>`);

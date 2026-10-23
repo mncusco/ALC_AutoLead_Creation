@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { sql } from "@/lib/db";
 import { generateArticle } from "@/lib/generate";
+import { searchPexelsImage } from "@/lib/pexels";
 
 export async function POST(req: Request) {
   const session = await getServerSession(authOptions);
@@ -40,10 +41,12 @@ export async function POST(req: Request) {
     tone: generated.tone,
   });
 
+  const imageUrl = await searchPexelsImage(`${generated.title} ${template.name}`);
+
   const [article] = await sql`
-    INSERT INTO articles (organization_id, title, language, template, content)
-    VALUES (${organizationId}, ${generated.title}, ${generated.language}, ${template.name}, ${content})
-    RETURNING id, title, language, template, created_at
+    INSERT INTO articles (organization_id, title, language, template, content, image_url)
+    VALUES (${organizationId}, ${generated.title}, ${generated.language}, ${template.name}, ${content}, ${imageUrl})
+    RETURNING id, title, language, template, created_at, image_url
   `;
 
   return NextResponse.json({ article });

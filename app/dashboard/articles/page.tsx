@@ -20,6 +20,7 @@ type Article = {
   created_at: string;
   content: ArticleContent | string;
   last_status?: string | null;
+  image_url?: string | null;
 };
 
 function parseContent(c: Article["content"]): ArticleContent | null {
@@ -171,10 +172,18 @@ export default function ArticlesPage() {
           const isOpen = expanded === a.id;
           return (
             <div className="article-card" key={a.id}>
-              <div
-                style={{ width: "100%", height: 90, borderRadius: 4, overflow: "hidden", marginBottom: 14 }}
-                dangerouslySetInnerHTML={{ __html: generateCoverArt(a.title) }}
-              />
+              {a.image_url ? (
+                <img
+                  src={a.image_url}
+                  alt={a.title}
+                  style={{ width: "100%", height: 90, objectFit: "cover", borderRadius: 4, marginBottom: 14, display: "block" }}
+                />
+              ) : (
+                <div
+                  style={{ width: "100%", height: 90, borderRadius: 4, overflow: "hidden", marginBottom: 14 }}
+                  dangerouslySetInnerHTML={{ __html: generateCoverArt(a.title) }}
+                />
+              )}
               <div className="head">
                 <div>
                   <p className="title">{a.title}</p>

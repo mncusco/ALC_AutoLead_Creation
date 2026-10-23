@@ -7,6 +7,8 @@ import { publishToWordPress } from "@/lib/publishers/wordpress";
 import { publishToGitHubPages } from "@/lib/publishers/githubPages";
 import { publishToFacebook } from "@/lib/publishers/facebook";
 import { publishToLinkedIn } from "@/lib/publishers/linkedin";
+import { publishToInstagram } from "@/lib/publishers/instagram";
+import { publishToPinterest } from "@/lib/publishers/pinterest";
 
 export async function POST(_req: Request, { params }: { params: { id: string; platform: string } }) {
   const session = await getServerSession(authOptions);
@@ -21,7 +23,7 @@ export async function POST(_req: Request, { params }: { params: { id: string; pl
   }
 
   const [article] = await sql`
-    SELECT id, title, content FROM articles
+    SELECT id, title, content, image_url FROM articles
     WHERE id = ${params.id} AND organization_id = ${organizationId}
     LIMIT 1
   `;
@@ -44,6 +46,7 @@ export async function POST(_req: Request, { params }: { params: { id: string; pl
     sections: content.sections,
     cta: content.cta,
     hashtags: content.hashtags,
+    imageUrl: article.image_url as string | null,
   };
 
   let result: { ok: boolean; message: string };
@@ -59,6 +62,12 @@ export async function POST(_req: Request, { params }: { params: { id: string; pl
       break;
     case "linkedin":
       result = await publishToLinkedIn(cfg, articleData);
+      break;
+    case "instagram":
+      result = await publishToInstagram(cfg, articleData);
+      break;
+    case "pinterest":
+      result = await publishToPinterest(cfg, articleData);
       break;
     default:
       result = { ok: false, message: "Non implementato" };

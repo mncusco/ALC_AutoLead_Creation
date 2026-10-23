@@ -60,8 +60,8 @@ export const INTEGRATIONS: Record<string, IntegrationDef> = {
   instagram: {
     key: "instagram",
     label: "Instagram",
-    publishSupported: false,
-    limitation: "L'API Instagram richiede un URL immagine pubblicamente raggiungibile per ogni post. Il sistema non ospita ancora immagini: le credenziali si salvano, ma la pubblicazione è disattivata finché non aggiungiamo hosting immagini.",
+    publishSupported: true,
+    limitation: "Richiede che l'articolo abbia trovato una foto (via Pexels) al momento della generazione — altrimenti la pubblicazione fallisce.",
     fields: [
       { key: "igUserId", label: "Instagram Business Account ID", type: "text" },
       { key: "accessToken", label: "Access Token", type: "password" },
@@ -71,8 +71,8 @@ export const INTEGRATIONS: Record<string, IntegrationDef> = {
   pinterest: {
     key: "pinterest",
     label: "Pinterest",
-    publishSupported: false,
-    limitation: "L'API Pinterest richiede un'immagine per ogni Pin. Il sistema non ospita ancora immagini: le credenziali si salvano, ma la pubblicazione è disattivata finché non aggiungiamo hosting immagini.",
+    publishSupported: true,
+    limitation: "Richiede che l'articolo abbia trovato una foto (via Pexels) al momento della generazione — altrimenti la pubblicazione fallisce.",
     fields: [
       { key: "boardId", label: "ID Board", type: "text" },
       { key: "accessToken", label: "Access Token", type: "password" },
