@@ -38,55 +38,71 @@ export default function SettingsPage() {
     e.preventDefault();
     setSaving(true);
     setMessage(null);
-    const res = await fetch("/api/social-accounts", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ platform, fields: formValues }),
-    });
-    const data = await res.json();
-    setSaving(false);
-    if (!res.ok) {
-      setMessage(`Errore: ${data.error}`);
-      return;
+    try {
+      const res = await fetch("/api/social-accounts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ platform, fields: formValues }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setMessage(`Errore: ${data.error || "impossibile salvare la connessione"}`);
+        return;
+      }
+      setOpenPlatform(null);
+      await loadConnected();
+    } catch {
+      setMessage("Errore di rete durante il salvataggio.");
+    } finally {
+      setSaving(false);
     }
-    setOpenPlatform(null);
-    loadConnected();
   }
 
   async function handleDisconnect(platform: string) {
-    await fetch(`/api/social-accounts/${platform}`, { method: "DELETE" });
-    loadConnected();
+    const res = await fetch(`/api/social-accounts/${platform}`, { method: "DELETE" });
+    if (res.ok) await loadConnected();
+    else setMessage("Errore durante la disconnessione.");
   }
 
   async function handleAnalyze(source: "website" | "facebook") {
     setAnalyzing(source);
     setBvMessage(null);
-    const res = await fetch("/api/organization/analyze-voice", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ source, url: websiteUrl }),
-    });
-    const data = await res.json();
-    setAnalyzing(null);
-    if (!res.ok) {
-      setBvMessage(`Errore: ${data.error}`);
-      return;
+    try {
+      const res = await fetch("/api/organization/analyze-voice", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ source, url: websiteUrl }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setBvMessage(`Errore: ${data.error || "analisi non riuscita"}`);
+        return;
+      }
+      setBrandVoice(data.brandVoice);
+      setBvMessage("Analisi completata — rivedi il testo qui sotto e premi Salva per confermarlo.");
+    } catch {
+      setBvMessage("Errore di rete durante l'analisi.");
+    } finally {
+      setAnalyzing(null);
     }
-    setBrandVoice(data.brandVoice);
-    setBvMessage("Analisi completata — rivedi il testo qui sotto e premi Salva per confermarlo.");
   }
 
   async function handleBvSubmit(e: React.FormEvent) {
     e.preventDefault();
     setBvSaving(true);
     setBvMessage(null);
-    const res = await fetch("/api/organization", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ brandVoice }),
-    });
-    setBvSaving(false);
-    setBvMessage(res.ok ? "Salvato." : "Errore nel salvataggio.");
+    try {
+      const res = await fetch("/api/organization", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ brandVoice }),
+      });
+      setBvMessage(res.ok ? "Salvato." : "Errore nel salvataggio.");
+    } catch {
+      setBvMessage("Errore di rete durante il salvataggio.");
+    } finally {
+      setBvSaving(false);
+    }
   }
 
   return (
@@ -115,12 +131,7 @@ export default function SettingsPage() {
           </div>
 
           {connected.includes("facebook") && (
-            <button
-              type="button"
-              onClick={() => handleAnalyze("facebook")}
-              disabled={analyzing !== null}
-              style={{ marginBottom: 14 }}
-            >
+            <button type="button" onClick={() => handleAnalyze("facebook")} disabled={analyzing !== null} style={{ marginBottom: 14 }}>
               {analyzing === "facebook" ? "Analisi..." : "Analizza dagli ultimi post Facebook collegati"}
             </button>
           )}
@@ -146,33 +157,28 @@ export default function SettingsPage() {
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                   <div>
                     <strong>{def.label}</strong>
-                    {!def.publishSupported && (
-                      <span style={{ fontSize: 12, color: "var(--gold)", marginLeft: 8 }}>pubblicazione non ancora attiva</span>
-                    )}
+                    {!def.publishSupported && <span style={{ fontSize: 12, color: "var(--gold)", marginLeft: 8 }}>pubblicazione non ancora attiva</span>}
                     {isConnected && <span className="status-pill success" style={{ marginLeft: 10 }}>collegato</span>}
                   </div>
                   <div style={{ display: "flex", gap: 8 }}>
-                    {isConnected && (
-                      <button onClick={() => handleDisconnect(key)} style={{ fontSize: 13 }}>Scollega</button>
-                    )}
-                    <button onClick={() => openForm(key)} style={{ fontSize: 13 }}>
-                      {isConnected ? "Aggiorna" : "Collega"}
-                    </button>
+                    {isConnected && <button onClick={() => handleDisconnect(key)} style={{ fontSize: 13 }}>Scollega</button>}
+                    <button onClick={() => openForm(key)} style={{ fontSize: 13 }}>{isConnected ? "Aggiorna" : "Collega"}</button>
                   </div>
                 </div>
 
                 {isOpen && (
                   <form onSubmit={(e) => handleConnect(e, key)} style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 14 }}>
                     <p style={{ fontSize: 13, color: "var(--ink-dim)", margin: 0 }}>{def.help}</p>
+                    {isConnected && <p style={{ fontSize: 12, color: "var(--ink-dim)", margin: 0 }}>Per aggiornare la connessione, compila soltanto i campi da modificare. I campi lasciati vuoti mantengono i valori già salvati.</p>}
                     {def.limitation && <p style={{ fontSize: 13, color: "var(--gold)", margin: 0 }}>{def.limitation}</p>}
                     {def.fields.map((f) => (
                       <input
                         key={f.key}
                         type={f.type}
-                        placeholder={f.placeholder || f.label}
+                        placeholder={isConnected ? "Vuoto = mantieni il valore salvato" : f.placeholder || f.label}
                         value={formValues[f.key] || ""}
                         onChange={(e) => setFormValues({ ...formValues, [f.key]: e.target.value })}
-                        required
+                        required={!isConnected}
                       />
                     ))}
                     <button type="submit" className="btn btn-primary" disabled={saving}>{saving ? "..." : "Salva"}</button>
