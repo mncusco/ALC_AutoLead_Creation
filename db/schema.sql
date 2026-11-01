@@ -1,10 +1,11 @@
--- ALC AutoLead Creation — schema iniziale multi-tenant
+-- ALC AutoLead Creation — schema multi-tenant (fresh installations)
 
 CREATE TABLE organizations (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   name TEXT NOT NULL,
   slug TEXT UNIQUE NOT NULL,
   plan TEXT NOT NULL DEFAULT 'trial',
+  brand_voice TEXT,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
@@ -22,6 +23,7 @@ CREATE TABLE social_accounts (
   organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
   platform TEXT NOT NULL,
   access_token_encrypted TEXT NOT NULL,
+  config JSONB,
   connected_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
@@ -32,7 +34,19 @@ CREATE TABLE articles (
   language TEXT NOT NULL,
   template TEXT,
   content TEXT NOT NULL,
+  image_url TEXT,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE TABLE content_templates (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+  name TEXT NOT NULL,
+  label TEXT NOT NULL,
+  language TEXT NOT NULL DEFAULT 'IT',
+  prompt TEXT NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  UNIQUE (organization_id, name)
 );
 
 CREATE TABLE publish_events (
@@ -67,3 +81,5 @@ CREATE TABLE subscriptions (
 CREATE INDEX idx_articles_org ON articles(organization_id);
 CREATE INDEX idx_publish_events_org ON publish_events(organization_id);
 CREATE INDEX idx_publish_events_article ON publish_events(article_id);
+CREATE INDEX idx_social_accounts_org ON social_accounts(organization_id);
+CREATE INDEX idx_content_templates_org ON content_templates(organization_id);
