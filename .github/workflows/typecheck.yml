@@ -1,4 +1,4 @@
-name: TypeScript validation
+name: TypeScript and build validation
 
 on:
   pull_request:
@@ -6,7 +6,7 @@ on:
     branches: [main]
 
 jobs:
-  typecheck:
+  validate:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -15,3 +15,4 @@ jobs:
           node-version: 20
       - run: npm install --no-audit --no-fund
       - run: npx tsc --noEmit
+      - run: npm run build
