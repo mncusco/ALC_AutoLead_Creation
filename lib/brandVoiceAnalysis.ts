@@ -122,8 +122,7 @@ export async function fetchFacebookPostsText(pageId: string, accessToken: string
   const url = new URL(`https://graph.facebook.com/v19.0/${encodeURIComponent(pageId)}/posts`);
   url.searchParams.set("fields", "message");
   url.searchParams.set("limit", "15");
-  url.searchParams.set("access_token", accessToken);
-  const res = await fetch(url, { signal: AbortSignal.timeout(12000) });
+  const res = await fetch(url, { headers: { Authorization: `Bearer ${accessToken}` }, signal: AbortSignal.timeout(12000) });
   if (!res.ok) {
     throw new Error(`Impossibile leggere i post Facebook (HTTP ${res.status}).`);
   }
