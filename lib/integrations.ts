@@ -32,10 +32,10 @@ export const INTEGRATIONS: Record<string, IntegrationDef> = {
       { key: "owner", label: "Owner", type: "text", placeholder: "es. mncusco" },
       { key: "repo", label: "Repo", type: "text", placeholder: "es. Blog" },
       { key: "branch", label: "Branch", type: "text", placeholder: "main" },
-      { key: "postsPath", label: "Cartella articoli", type: "text", placeholder: "posts" },
+      { key: "postsPath", label: "Cartella articoli (per altri repository)", type: "text", placeholder: "posts" },
       { key: "token", label: "Personal Access Token", type: "password" },
     ],
-    help: "Token GitHub con permesso Contents: Read and write sul repo.",
+    help: "Token GitHub con permesso Contents: Read and write. Per mncusco/Blog, ALC crea la pagina nella root e aggiorna automaticamente articoli.html e sitemap.xml; il campo Cartella viene ignorato. Per altri repository usa la cartella indicata.",
   },
   facebook: {
     key: "facebook",
