@@ -239,9 +239,10 @@ export async function publishToGitHubPages(
   article: ArticleData
 ): Promise<{ ok: boolean; message: string }> {
   const branch = cfg.branch || "main";
-  if (cfg.owner !== "mncusco" || cfg.repo !== "Blog" || !cfg.token) {
-    return { ok: false, message: "Questa versione del publisher è configurata per il repository mncusco/Blog. Verifica owner e repo." };
+  if (cfg.owner !== "mncusco" || cfg.repo !== "Blog") {
+    return publishGenericGitHubPages(cfg, article);
   }
+  if (!cfg.token) return { ok: false, message: "Token GitHub mancante." };
   if (!article.title?.trim() || !article.lead?.trim() || !Array.isArray(article.sections)) {
     return { ok: false, message: "Contenuto articolo incompleto." };
   }
