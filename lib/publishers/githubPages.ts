@@ -2,6 +2,7 @@
 // Crea la pagina nella root, aggiunge una scheda in articoli.html e aggiorna sitemap.xml.
 
 import { escapeHtml, safeImageUrl } from "@/lib/html";
+import { generateCoverArt } from "@/lib/coverArt";
 
 type GhConfig = { owner: string; repo: string; branch?: string; postsPath?: string; token: string };
 type ArticleData = {
@@ -190,6 +191,47 @@ function addSitemapUrl(xml: string, slug: string) {
   if (xml.includes(`<loc>${url}</loc>`)) return xml;
   if (!xml.includes("</urlset>")) throw new Error("Formato sitemap.xml non riconosciuto.");
   return xml.replace("</urlset>", `  <url><loc>${url}</loc></url>\n</urlset>`);
+}
+
+async function publishGenericGitHubPages(cfg: GhConfig, article: ArticleData): Promise<{ ok: boolean; message: string }> {
+  const branch = cfg.branch || "main";
+  const segments = (cfg.postsPath || "posts").split("/").filter(Boolean);
+  if (!cfg.owner || !cfg.repo || !cfg.token || !segments.length ||
+      segments.some(part => part === "." || part === ".." || !/^[a-zA-Z0-9_.-]+$/.test(part))) {
+    return { ok: false, message: "Configurazione GitHub Pages non valida." };
+  }
+  const slug = `${slugify(article.title)}-${Date.now().toString(36)}`;
+  const path = `${segments.join("/")}/${slug}.html`;
+  const imageUrl = safeImageUrl(article.imageUrl);
+  const cover = imageUrl
+    ? `<img src="${escapeHtml(imageUrl)}" alt="${escapeHtml(article.title)}" style="width:100%;height:auto">`
+    : generateCoverArt(article.title);
+  const body = (article.sections || []).map(s =>
+    `<h2>${escapeHtml(s.heading)}</h2><p>${escapeHtml(s.body).replace(/\\n/g, "<br>")}</p>`
+  ).join("\\n");
+  const html = `<!doctype html><html lang="${article.language === "EN" ? "en" : "it"}"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>${escapeHtml(article.title)}</title><meta name="description" content="${escapeHtml(article.metaDescription || article.lead)}">
+<meta property="og:title" content="${escapeHtml(article.title)}"><meta property="og:description" content="${escapeHtml(article.metaDescription || article.lead)}"><meta property="og:type" content="article">
+${imageUrl ? `<meta property="og:image" content="${escapeHtml(imageUrl)}">` : ""}
+</head><body><main style="max-width:760px;margin:40px auto;padding:0 20px;font:17px/1.7 system-ui,sans-serif">
+<div>${cover}</div><h1>${escapeHtml(article.title)}</h1><p>${escapeHtml(article.lead)}</p>${body}
+<p><strong>${escapeHtml(article.cta)}</strong></p></main></body></html>`;
+  try {
+    const res = await githubRequest(
+      `https://api.github.com/repos/${encodeURIComponent(cfg.owner)}/${encodeURIComponent(cfg.repo)}/contents/${path.split("/").map(encodeURIComponent).join("/")}`,
+      cfg.token,
+      { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({
+        message: `Nuovo articolo: ${article.title.slice(0, 90)}`,
+        content: Buffer.from(html, "utf8").toString("base64"),
+        branch
+      }) }
+    );
+    if (!res.ok) return { ok: false, message: `GitHub non ha pubblicato il file (HTTP ${res.status}).` };
+    return { ok: true, message: `File HTML creato nel repository: ${path}` };
+  } catch {
+    return { ok: false, message: "Errore di rete durante la pubblicazione su GitHub." };
+  }
 }
 
 export async function publishToGitHubPages(
