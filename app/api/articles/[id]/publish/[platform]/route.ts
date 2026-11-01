@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { sql } from "@/lib/db";
 import { INTEGRATIONS } from "@/lib/integrations";
+import { readIntegrationConfig } from "@/lib/integrationCrypto";
 import { publishToWordPress } from "@/lib/publishers/wordpress";
 import { publishToGitHubPages } from "@/lib/publishers/githubPages";
 import { publishToFacebook } from "@/lib/publishers/facebook";
@@ -22,66 +23,58 @@ export async function POST(_req: Request, { params }: { params: { id: string; pl
     return NextResponse.json({ error: def.limitation || "Pubblicazione non ancora disponibile per questa piattaforma." }, { status: 400 });
   }
 
-  const [article] = await sql`
-    SELECT id, title, content, image_url FROM articles
-    WHERE id = ${params.id} AND organization_id = ${organizationId}
-    LIMIT 1
-  `;
-  if (!article) return NextResponse.json({ error: "Articolo non trovato" }, { status: 404 });
+  try {
+    const [article] = await sql`
+      SELECT id, title, content, image_url FROM articles
+      WHERE id = ${params.id} AND organization_id = ${organizationId}
+      LIMIT 1
+    `;
+    if (!article) return NextResponse.json({ error: "Articolo non trovato" }, { status: 404 });
 
-  const [account] = await sql`
-    SELECT config FROM social_accounts
-    WHERE organization_id = ${organizationId} AND platform = ${platform}
-    LIMIT 1
-  `;
-  if (!account) {
-    return NextResponse.json({ error: `${def.label} non collegato. Vai in Impostazioni.` }, { status: 400 });
+    const [account] = await sql`
+      SELECT access_token_encrypted, config FROM social_accounts
+      WHERE organization_id = ${organizationId} AND platform = ${platform}
+      ORDER BY connected_at DESC LIMIT 1
+    `;
+    if (!account) {
+      return NextResponse.json({ error: `${def.label} non collegato. Vai in Impostazioni.` }, { status: 400 });
+    }
+
+    const cfg = readIntegrationConfig(account.access_token_encrypted, account.config) as any;
+    const content = typeof article.content === "string" ? JSON.parse(article.content) : article.content;
+    const articleData = {
+      title: article.title,
+      lead: content?.lead || "",
+      sections: Array.isArray(content?.sections) ? content.sections : [],
+      cta: content?.cta || "",
+      hashtags: Array.isArray(content?.hashtags) ? content.hashtags : [],
+      metaDescription: content?.meta_description || "",
+      imageUrl: article.image_url as string | null,
+    };
+
+    let result: { ok: boolean; message: string };
+    switch (platform) {
+      case "wordpress": result = await publishToWordPress(cfg, articleData); break;
+      case "github_pages": result = await publishToGitHubPages(cfg, articleData); break;
+      case "facebook": result = await publishToFacebook(cfg, articleData); break;
+      case "linkedin": result = await publishToLinkedIn(cfg, articleData); break;
+      case "instagram": result = await publishToInstagram(cfg, articleData); break;
+      case "pinterest": result = await publishToPinterest(cfg, articleData); break;
+      default: result = { ok: false, message: "Non implementato" };
+    }
+
+    await sql`
+      INSERT INTO publish_events (organization_id, article_id, platform, status, published_at, error_message)
+      VALUES (
+        ${organizationId}, ${article.id}, ${platform},
+        ${result.ok ? "success" : "failed"},
+        ${result.ok ? new Date().toISOString() : null},
+        ${result.ok ? null : result.message}
+      )
+    `;
+
+    return NextResponse.json({ ok: result.ok, message: result.message });
+  } catch (e: any) {
+    return NextResponse.json({ ok: false, error: e?.message || "Errore durante la pubblicazione" }, { status: 502 });
   }
-
-  const cfg = account.config as any;
-  const content = article.content as any;
-  const articleData = {
-    title: article.title,
-    lead: content.lead,
-    sections: content.sections,
-    cta: content.cta,
-    hashtags: content.hashtags,
-    imageUrl: article.image_url as string | null,
-  };
-
-  let result: { ok: boolean; message: string };
-  switch (platform) {
-    case "wordpress":
-      result = await publishToWordPress(cfg, articleData);
-      break;
-    case "github_pages":
-      result = await publishToGitHubPages(cfg, articleData);
-      break;
-    case "facebook":
-      result = await publishToFacebook(cfg, articleData);
-      break;
-    case "linkedin":
-      result = await publishToLinkedIn(cfg, articleData);
-      break;
-    case "instagram":
-      result = await publishToInstagram(cfg, articleData);
-      break;
-    case "pinterest":
-      result = await publishToPinterest(cfg, articleData);
-      break;
-    default:
-      result = { ok: false, message: "Non implementato" };
-  }
-
-  await sql`
-    INSERT INTO publish_events (organization_id, article_id, platform, status, published_at, error_message)
-    VALUES (
-      ${organizationId}, ${article.id}, ${platform},
-      ${result.ok ? "success" : "failed"},
-      ${result.ok ? new Date().toISOString() : null},
-      ${result.ok ? null : result.message}
-    )
-  `;
-
-  return NextResponse.json({ ok: result.ok, message: result.message });
 }
