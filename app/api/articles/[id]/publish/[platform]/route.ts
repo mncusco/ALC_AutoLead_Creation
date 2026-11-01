@@ -25,7 +25,7 @@ export async function POST(_req: Request, { params }: { params: { id: string; pl
 
   try {
     const [article] = await sql`
-      SELECT id, title, content, image_url FROM articles
+      SELECT id, title, language, content, image_url FROM articles
       WHERE id = ${params.id} AND organization_id = ${organizationId}
       LIMIT 1
     `;
@@ -44,6 +44,7 @@ export async function POST(_req: Request, { params }: { params: { id: string; pl
     const content = typeof article.content === "string" ? JSON.parse(article.content) : article.content;
     const articleData = {
       title: article.title,
+      language: article.language,
       lead: content?.lead || "",
       sections: Array.isArray(content?.sections) ? content.sections : [],
       cta: content?.cta || "",
